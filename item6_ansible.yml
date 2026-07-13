@@ -1,0 +1,42 @@
+---
+- name: Configurar CSR1000v mediante Ansible
+  hosts: routers
+  gather_facts: no
+
+  vars_prompt:
+    - name: ansible_user
+      prompt: "Usuario SSH"
+      private: no
+
+    - name: ansible_password
+      prompt: "Contraseña SSH"
+      private: yes
+
+  tasks:
+    - name: Crear Loopback33 con direccionamiento IPv6
+      ios_config:
+        parents: interface Loopback33
+        lines:
+          - description Configurada mediante Ansible
+          - ipv6 address 3001:ABCD:ABCD:1::1/128
+          - ipv6 address FE80::1 link-local
+          - no shutdown
+
+    - name: Obtener configuracion de Loopback33
+      ios_command:
+        commands:
+          - show running-config interface Loopback33
+      register: resultado_loopback
+
+    - name: Mostrar configuracion de Loopback33
+      debug:
+        var: resultado_loopback.stdout_lines
+
+    - name: Respaldar running-config
+      ios_config:
+        backup: yes
+      register: resultado_backup
+
+    - name: Mostrar ubicacion del respaldo
+      debug:
+        var: resultado_backup.backup_path
